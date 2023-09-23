@@ -19,12 +19,14 @@ from fake_useragent import UserAgent
 import random
 import sys
 
-from selenium import webdriver
+
+# from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 # from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 # from selenium.webdriver.common.action_chains import ActionChains  # Цепочка событий
 from selenium.webdriver.common.keys import Keys
+from seleniumwire import webdriver
 
 from time import sleep
 from time import time
@@ -33,7 +35,7 @@ from random import randint
 
 # # - Подключение модулей -
 from config import  USER_AGENT_MY_GOOGLE_CHROME, LIST_WITH_COLUMNS_LNK,\
-    LIST_WITH_STATUS_MSG, LIST_WITH_COLUMNS_COMBINED
+    LIST_WITH_STATUS_MSG, LIST_WITH_COLUMNS_COMBINED, USED_PROXIES
 #     PARAMETER_ANSWER_A_SECRET_QUESTION, PATH_TO_FILE_DRIVER_CHROME,\
 #     LIST_WITH_STATUS
 #     # HEADLESS, PARAMETER_CHANGE_PASSWORD,
@@ -58,6 +60,16 @@ dict_with_result_lnk = {} # словарь для хранения резуль�
 PARAM_DICT = read_parameters_from_txt_file_and_add_to_dict()
 """Словарь с параметрами из файла config.txt"""
 
+import os
+from dotenv import load_dotenv
+load_dotenv()
+
+API_KEY_FOR_RUCAPTCHA = os.getenv('API_KEY_FOR_RUCAPTCHA')
+PROXY_IP_PORT = os.getenv('PROXY_IP_PORT')
+PROXY_LOGIN = os.getenv('PROXY_LOGIN')
+PROXY_PASSWORD = os.getenv('PROXY_PASSWORD')
+
+
 URL_YANDEX_RU = 'https://passport.yandex.ru'
 URL_AUTO_LOGIN = 'https://auth.auto.ru/login/?r=https%3A%2F%2Fauto.ru%2F'
 
@@ -74,7 +86,7 @@ def init_driver(*cookies) -> webdriver:
     ua = UserAgent()  # (browsers=['chrome',])
     fake_user_agent = ua.random # (с помощью библиотеки fake_user_agent)
     # Изменение случайного юзер агента на свой chrome mac os (для теста)
-    fake_user_agent = USER_AGENT_MY_GOOGLE_CHROME
+    # fake_user_agent = USER_AGENT_MY_GOOGLE_CHROME
     logger.debug(f'Создан user agent: {fake_user_agent}')
     # Опции для браузера (драйвера)
     options = Options()
@@ -85,23 +97,44 @@ def init_driver(*cookies) -> webdriver:
     # options.add_argument("--incognito")
 
     # Отключение режима Webdriver
-    options.add_argument(f'--disable-blink-features=AutomationControlled')
+    options.add_argument(f'--disable-blink-features=AutomationControlled'  )
     logger.debug('в options Отключен режима Webdriver')
     # Скрытый режим headless mode
-    if PARAM_DICT['HEADLESS'] == 'True':  # Строка, так как из текстового конфига
+    if PARAM_DICT["HEADLESS"] =='True':
         options.add_argument("--headless")
         logger.debug('в options включен скрытый режим браузера')
 
     # путь к chromedriver.exe (можно задать через service)
     # s = Service(PATH_TO_FILE_DRIVER_CHROME)
+    if USED_PROXIES:
+        # proxy = rotate_proxy()
+        # proxy = PROXY_IP_PORT
+        # options.add_argument('--proxy-server=%s' % proxy)
+
+        # prox = Proxy()
+        # prox.http_proxy = proxy
+        # prox.socks_proxy = proxy
+        # prox.ssl_proxy = proxy
+
+        # capabilities = webdriver.DesiredCapabilities.CHROME.copy()
+        # prox.to_capabilities(capabilities)
+        options = {
+            'proxy': {
+                'http': f'http://{PROXY_LOGIN}:{PROXY_PASSWORD}@{PROXY_IP_PORT}',
+                'https': f'https://{PROXY_LOGIN}:{PROXY_PASSWORD}@{PROXY_IP_PORT}',
+                'no_proxy': 'localhost,127.0.0.1'
+            }
+        }
 
     # инициализируем драйвер с нужными опциями
     driver = webdriver.Chrome(
-        options=options,
+        seleniumwire_options=options,
+        # options=options,
+        # desired_capabilities=capabilities,
         # executable_path=PATH_TO_FILE_DRIVER_CHROME,
         # service=s,
         )
-    driver.set_page_load_timeout(30)
+    driver.set_page_load_timeout(60)
     return driver
 
 

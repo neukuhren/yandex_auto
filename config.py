@@ -149,4 +149,4 @@ user_agent_google_chrome_list = [
 
 URL_BEST_PROXIES = 'https://api.best-proxies.ru/proxylist.txt?key=6c585729c24e1ca0db5fad1077921b48&type=https,socks4,socks5&level=1&speed=1&uptime=1&cex=1&country=cn&limit=0'
 
-USED_PROXIES = False
+USED_PROXIES = True
